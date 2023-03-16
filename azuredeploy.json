@@ -79,7 +79,7 @@
                                                 },
                                                 "host":  {
                                                     "connection":  {
-                                                        "name":  "@parameters('$connections')['azuresentinel_1']['connectionId']"
+                                                        "name":  "@parameters('$connections')['azuresentinel']['connectionId']"
                                                     }
                                                 },
                                                 "method":  "post",
@@ -204,7 +204,7 @@
                                                 },
                                                 "host":  {
                                                     "connection":  {
-                                                        "name":  "@parameters('$connections')['azuresentinel_1']['connectionId']"
+                                                        "name":  "@parameters('$connections')['azuresentinel']['connectionId']"
                                                     }
                                                 },
                                                 "method":  "post",
@@ -328,7 +328,7 @@
                                         },
                                         "host":  {
                                             "connection":  {
-                                                "name":  "@parameters('$connections')['azuresentinel_1']['connectionId']"
+                                                "name":  "@parameters('$connections')['azuresentinel']['connectionId']"
                                             }
                                         },
                                         "method":  "post",
@@ -352,7 +352,7 @@
                                     {
                                         "name":  "AzureOpenAI_URI",
                                         "type":  "string",
-                                        "value":  "https://openaitest123.openai.azure.com/openai/deployments/test1/completions?api-version=2022-12-01"
+                                        "value":  "https://YOUR_RESOURCE_NAME.openai.azure.com/openai/deployments//YOUR_DEPLOYMENT_NAME/completions?api-version=2022-12-01"
                                     }
                                 ]
                             }
@@ -503,16 +503,6 @@
                     "$connections":  {
                         "value":  {
                             "azuresentinel":  {
-                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('MicrosoftSentinelConnectionName'))]",
-                                "connectionName":  "[variables('MicrosoftSentinelConnectionName')]",
-                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Azuresentinel')]",
-                                "connectionProperties":  {
-                                    "authentication":  {
-                                        "type":  "ManagedServiceIdentity"
-                                    }
-                                }
-                            },
-                            "azuresentinel_1":  {
                                 "connectionId":  "[resourceId('Microsoft.Web/connections', variables('MicrosoftSentinelConnectionName'))]",
                                 "connectionName":  "[variables('MicrosoftSentinelConnectionName')]",
                                 "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Azuresentinel')]",
