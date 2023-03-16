@@ -1,0 +1,539 @@
+{
+    "$schema":  "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion":  "1.0.0.0",
+    "metadata":  {
+        "title":  "",
+        "description":  "",
+        "prerequisites":  "",
+        "postDeployment":  [
+        ],
+        "prerequisitesDeployTemplateFile":  "",
+        "lastUpdateTime":  "",
+        "entities":  [
+        ],
+        "tags":  [
+        ],
+        "support":  {
+            "tier":  "community",
+            "armtemplate":  "Generated from https://github.com/Azure/Azure-Sentinel/tree/master/Tools/Playbook-ARM-Template-Generator"
+        },
+        "author":  {
+            "name":  ""
+        }
+    },
+    "parameters":  {
+        "PlaybookName":  {
+            "defaultValue":  "AzureOpenAI_Sentinel_IR",
+            "type":  "string"
+        }
+    },
+    "variables":  {
+        "MicrosoftSentinelConnectionName":  "[concat('MicrosoftSentinel-', parameters('PlaybookName'))]"
+    },
+    "resources":  [
+        {
+            "properties":  {
+                "provisioningState":  "Succeeded",
+                "state":  "Enabled",
+                "definition":  {
+                    "$schema":  "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion":  "1.0.0.0",
+                    "parameters":  {
+                        "$connections":  {
+                            "defaultValue":  {
+                            },
+                            "type":  "Object"
+                        }
+                    },
+                    "triggers":  {
+                        "Microsoft_Sentinel_incident":  {
+                            "type":  "ApiConnectionWebhook",
+                            "inputs":  {
+                                "body":  {
+                                    "callback_url":  "@{listCallbackUrl()}"
+                                },
+                                "host":  {
+                                    "connection":  {
+                                        "name":  "@parameters('$connections')['azuresentinel']['connectionId']"
+                                    }
+                                },
+                                "path":  "/incident-creation"
+                            }
+                        }
+                    },
+                    "actions":  {
+                        "Add_Comment_on_TTPs":  {
+                            "foreach":  "@triggerBody()?['object']?['properties']?['additionalData']?['tactics']",
+                            "actions":  {
+                                "For_each_-_Add_Commenti_on_TTPs":  {
+                                    "foreach":  "@body('Parse_JSON_-_Add_Commenti_on_TTPs')?['choices']",
+                                    "actions":  {
+                                        "Add_comment_to_incident_(V3)":  {
+                                            "runAfter":  {
+                                            },
+                                            "type":  "ApiConnection",
+                                            "inputs":  {
+                                                "body":  {
+                                                    "incidentArmId":  "@triggerBody()?['object']?['id']",
+                                                    "message":  "\u003cp\u003eTactics and techniques related to Incident @{triggerBody()?['object']?['properties']?['title']}:\u003cbr\u003e\n\u003cbr\u003e\n@{items('For_each_-_Add_Commenti_on_TTPs')?['text']}\u003c/p\u003e"
+                                                },
+                                                "host":  {
+                                                    "connection":  {
+                                                        "name":  "@parameters('$connections')['azuresentinel_1']['connectionId']"
+                                                    }
+                                                },
+                                                "method":  "post",
+                                                "path":  "/Incidents/Comment"
+                                            }
+                                        }
+                                    },
+                                    "runAfter":  {
+                                        "Parse_JSON_-_Add_Commenti_on_TTPs":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "Foreach"
+                                },
+                                "OpenAI_API_-_Add_Commenti_on_TTPs":  {
+                                    "runAfter":  {
+                                    },
+                                    "type":  "Http",
+                                    "inputs":  {
+                                        "body":  {
+                                            "max_tokens":  4000,
+                                            "prompt":  "@{variables('IR')}"
+                                        },
+                                        "headers":  {
+                                            "Content-Type":  "application/json",
+                                            "api-key":  "@{variables('api-key')}"
+                                        },
+                                        "method":  "POST",
+                                        "uri":  "https://openaitest123.openai.azure.com/openai/deployments/test1/completions?api-version=2022-12-01"
+                                    }
+                                },
+                                "Parse_JSON_-_Add_Commenti_on_TTPs":  {
+                                    "runAfter":  {
+                                        "OpenAI_API_-_Add_Commenti_on_TTPs":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "ParseJson",
+                                    "inputs":  {
+                                        "content":  "@body('OpenAI_API_-_Add_Commenti_on_TTPs')",
+                                        "schema":  {
+                                            "properties":  {
+                                                "choices":  {
+                                                    "items":  {
+                                                        "properties":  {
+                                                            "finish_reason":  {
+                                                                "type":  "string"
+                                                            },
+                                                            "index":  {
+                                                                "type":  "integer"
+                                                            },
+                                                            "logprobs":  {
+                                                            },
+                                                            "text":  {
+                                                                "type":  "string"
+                                                            }
+                                                        },
+                                                        "required":  [
+                                                            "text",
+                                                            "index",
+                                                            "finish_reason",
+                                                            "logprobs"
+                                                        ],
+                                                        "type":  "object"
+                                                    },
+                                                    "type":  "array"
+                                                },
+                                                "created":  {
+                                                    "type":  "integer"
+                                                },
+                                                "id":  {
+                                                    "type":  "string"
+                                                },
+                                                "model":  {
+                                                    "type":  "string"
+                                                },
+                                                "object":  {
+                                                    "type":  "string"
+                                                },
+                                                "usage":  {
+                                                    "properties":  {
+                                                        "completion_tokens":  {
+                                                            "type":  "integer"
+                                                        },
+                                                        "prompt_tokens":  {
+                                                            "type":  "integer"
+                                                        },
+                                                        "total_tokens":  {
+                                                            "type":  "integer"
+                                                        }
+                                                    },
+                                                    "type":  "object"
+                                                }
+                                            },
+                                            "type":  "object"
+                                        }
+                                    }
+                                }
+                            },
+                            "runAfter":  {
+                                "Incident_response_question":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "Foreach"
+                        },
+                        "Add_KQL_suggestion":  {
+                            "foreach":  "@body('Parse_JSON_-_ask_for_tasks')?['choices']",
+                            "actions":  {
+                                "For_each_-_Add_KQL_suggestion":  {
+                                    "foreach":  "@body('Parse_JSON_-_Add_KQL_suggestion')?['choices']",
+                                    "actions":  {
+                                        "Add_task_to_incident_3":  {
+                                            "runAfter":  {
+                                            },
+                                            "type":  "ApiConnection",
+                                            "inputs":  {
+                                                "body":  {
+                                                    "incidentArmId":  "@triggerBody()?['object']?['id']",
+                                                    "taskDescription":  "\u003cp\u003eAzure OpenAI suggests following \u003cstrong\u003eKQL query\u003c/strong\u003e:\u003cbr\u003e\n@{items('For_each_-_Add_KQL_suggestion')?['text']}\u003cbr\u003e\n\u003cbr\u003e\nPlease modify as appropriate.\u003c/p\u003e",
+                                                    "taskTitle":  "Example KQL queries:"
+                                                },
+                                                "host":  {
+                                                    "connection":  {
+                                                        "name":  "@parameters('$connections')['azuresentinel_1']['connectionId']"
+                                                    }
+                                                },
+                                                "method":  "post",
+                                                "path":  "/Incidents/CreateTask"
+                                            }
+                                        }
+                                    },
+                                    "runAfter":  {
+                                        "Parse_JSON_-_Add_KQL_suggestion":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "Foreach"
+                                },
+                                "OpenAI_API_-_Add_KQL_suggestion":  {
+                                    "runAfter":  {
+                                    },
+                                    "type":  "Http",
+                                    "inputs":  {
+                                        "body":  {
+                                            "max_tokens":  2000,
+                                            "model":  "text-davinci-003",
+                                            "prompt":  "Generate Microsoft Sentinel KQL query to implement your suggestion: @{items('Add_KQL_suggestion')?['text']}",
+                                            "temperature":  0
+                                        },
+                                        "headers":  {
+                                            "Content-Type":  "application/json",
+                                            "api-key":  "@variables('api-key')"
+                                        },
+                                        "method":  "POST",
+                                        "uri":  "https://openaitest123.openai.azure.com/openai/deployments/test1/completions?api-version=2022-12-01"
+                                    }
+                                },
+                                "Parse_JSON_-_Add_KQL_suggestion":  {
+                                    "runAfter":  {
+                                        "OpenAI_API_-_Add_KQL_suggestion":  [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type":  "ParseJson",
+                                    "inputs":  {
+                                        "content":  "@body('OpenAI_API_-_Add_KQL_suggestion')",
+                                        "schema":  {
+                                            "properties":  {
+                                                "choices":  {
+                                                    "items":  {
+                                                        "properties":  {
+                                                            "finish_reason":  {
+                                                                "type":  "string"
+                                                            },
+                                                            "index":  {
+                                                                "type":  "integer"
+                                                            },
+                                                            "logprobs":  {
+                                                            },
+                                                            "text":  {
+                                                                "type":  "string"
+                                                            }
+                                                        },
+                                                        "required":  [
+                                                            "text",
+                                                            "index",
+                                                            "finish_reason",
+                                                            "logprobs"
+                                                        ],
+                                                        "type":  "object"
+                                                    },
+                                                    "type":  "array"
+                                                },
+                                                "created":  {
+                                                    "type":  "integer"
+                                                },
+                                                "id":  {
+                                                    "type":  "string"
+                                                },
+                                                "model":  {
+                                                    "type":  "string"
+                                                },
+                                                "object":  {
+                                                    "type":  "string"
+                                                },
+                                                "usage":  {
+                                                    "properties":  {
+                                                        "completion_tokens":  {
+                                                            "type":  "integer"
+                                                        },
+                                                        "prompt_tokens":  {
+                                                            "type":  "integer"
+                                                        },
+                                                        "total_tokens":  {
+                                                            "type":  "integer"
+                                                        }
+                                                    },
+                                                    "type":  "object"
+                                                }
+                                            },
+                                            "type":  "object"
+                                        }
+                                    }
+                                }
+                            },
+                            "runAfter":  {
+                                "Parse_JSON_-_ask_for_tasks":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "Foreach"
+                        },
+                        "Add_Tasks":  {
+                            "foreach":  "@body('Parse_JSON_-_ask_for_tasks')?['choices']",
+                            "actions":  {
+                                "Add_task_to_incident":  {
+                                    "runAfter":  {
+                                    },
+                                    "type":  "ApiConnection",
+                                    "inputs":  {
+                                        "body":  {
+                                            "incidentArmId":  "@triggerBody()?['object']?['id']",
+                                            "taskDescription":  "\u003cp\u003eAzure OpenAI suggests following investigation procedure:\u003cbr\u003e\n@{items('Add_Tasks')?['text']}\u003c/p\u003e",
+                                            "taskTitle":  "Task from Azure openAI"
+                                        },
+                                        "host":  {
+                                            "connection":  {
+                                                "name":  "@parameters('$connections')['azuresentinel_1']['connectionId']"
+                                            }
+                                        },
+                                        "method":  "post",
+                                        "path":  "/Incidents/CreateTask"
+                                    }
+                                }
+                            },
+                            "runAfter":  {
+                                "Parse_JSON_-_ask_for_tasks":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "Foreach"
+                        },
+                        "Incident_response_question":  {
+                            "runAfter":  {
+                                "api-key":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "IR",
+                                        "type":  "string",
+                                        "value":  "Describe following Mitre Attack tactics @{triggerBody()?['object']?['properties']?['additionalData']?['tactics']}"
+                                    }
+                                ]
+                            }
+                        },
+                        "OpenAI_API_-_ask_for_tasks":  {
+                            "runAfter":  {
+                                "ask-for-tasks":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "Http",
+                            "inputs":  {
+                                "body":  {
+                                    "max_tokens":  4000,
+                                    "prompt":  "@{variables('ask-for-tasks')}"
+                                },
+                                "headers":  {
+                                    "Content-Type":  "application/json",
+                                    "api-key":  "@{variables('api-key')}"
+                                },
+                                "method":  "POST",
+                                "uri":  "https://openaitest123.openai.azure.com/openai/deployments/test1/completions?api-version=2022-12-01"
+                            }
+                        },
+                        "Parse_JSON_-_ask_for_tasks":  {
+                            "runAfter":  {
+                                "OpenAI_API_-_ask_for_tasks":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "ParseJson",
+                            "inputs":  {
+                                "content":  "@body('OpenAI_API_-_ask_for_tasks')",
+                                "schema":  {
+                                    "properties":  {
+                                        "choices":  {
+                                            "items":  {
+                                                "properties":  {
+                                                    "finish_reason":  {
+                                                        "type":  "string"
+                                                    },
+                                                    "index":  {
+                                                        "type":  "integer"
+                                                    },
+                                                    "logprobs":  {
+                                                    },
+                                                    "text":  {
+                                                        "type":  "string"
+                                                    }
+                                                },
+                                                "required":  [
+                                                    "text",
+                                                    "index",
+                                                    "finish_reason",
+                                                    "logprobs"
+                                                ],
+                                                "type":  "object"
+                                            },
+                                            "type":  "array"
+                                        },
+                                        "created":  {
+                                            "type":  "integer"
+                                        },
+                                        "id":  {
+                                            "type":  "string"
+                                        },
+                                        "model":  {
+                                            "type":  "string"
+                                        },
+                                        "object":  {
+                                            "type":  "string"
+                                        },
+                                        "usage":  {
+                                            "properties":  {
+                                                "completion_tokens":  {
+                                                    "type":  "integer"
+                                                },
+                                                "prompt_tokens":  {
+                                                    "type":  "integer"
+                                                },
+                                                "total_tokens":  {
+                                                    "type":  "integer"
+                                                }
+                                            },
+                                            "type":  "object"
+                                        }
+                                    },
+                                    "type":  "object"
+                                }
+                            }
+                        },
+                        "api-key":  {
+                            "runAfter":  {
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "api-key",
+                                        "type":  "string",
+                                        "value":  "YOUR-AZURE-OPENAI-KEY"
+                                    }
+                                ]
+                            }
+                        },
+                        "ask-for-tasks":  {
+                            "runAfter":  {
+                                "api-key":  [
+                                    "Succeeded"
+                                ]
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "ask-for-tasks",
+                                        "type":  "string",
+                                        "value":  "What tasks to investigate security incident @{triggerBody()?['object']?['properties']?['title']},with Microsoft Sentinel?"
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "outputs":  {
+                    }
+                },
+                "parameters":  {
+                    "$connections":  {
+                        "value":  {
+                            "azuresentinel":  {
+                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('MicrosoftSentinelConnectionName'))]",
+                                "connectionName":  "[variables('MicrosoftSentinelConnectionName')]",
+                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Azuresentinel')]",
+                                "connectionProperties":  {
+                                    "authentication":  {
+                                        "type":  "ManagedServiceIdentity"
+                                    }
+                                }
+                            },
+                            "azuresentinel_1":  {
+                                "connectionId":  "/subscriptions/1fc83b9d-a5e5-416b-be7a-b4a6b4c30dd3/resourceGroups/sentinel-we/providers/Microsoft.Web/connections/azuresentinel",
+                                "connectionName":  "azuresentinel",
+                                "id":  "/subscriptions/1fc83b9d-a5e5-416b-be7a-b4a6b4c30dd3/providers/Microsoft.Web/locations/westeurope/managedApis/azuresentinel"
+                            }
+                        }
+                    }
+                }
+            },
+            "name":  "[parameters('PlaybookName')]",
+            "type":  "Microsoft.Logic/workflows",
+            "location":  "[resourceGroup().location]",
+            "tags":  {
+                "hidden-SentinelTemplateName":  "AzureOpenAI_Sentinel_IR",
+                "hidden-SentinelTemplateVersion":  "1.0"
+            },
+            "identity":  {
+                "type":  "SystemAssigned"
+            },
+            "apiVersion":  "2017-07-01",
+            "dependsOn":  [
+                "[resourceId('Microsoft.Web/connections', variables('MicrosoftSentinelConnectionName'))]"
+            ]
+        },
+        {
+            "type":  "Microsoft.Web/connections",
+            "apiVersion":  "2016-06-01",
+            "name":  "[variables('MicrosoftSentinelConnectionName')]",
+            "location":  "[resourceGroup().location]",
+            "kind":  "V1",
+            "properties":  {
+                "displayName":  "[variables('MicrosoftSentinelConnectionName')]",
+                "customParameterValues":  {
+                },
+                "parameterValueType":  "Alternative",
+                "api":  {
+                    "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Azuresentinel')]"
+                }
+            }
+        }
+    ]
+}
