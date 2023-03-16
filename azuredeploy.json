@@ -15,7 +15,7 @@
         ],
         "support":  {
             "tier":  "community",
-            "armtemplate":  "Generated from https://github.com/Azure/Azure-Sentinel/tree/master/Tools/Playbook-ARM-Template-Generator"
+            "armtemplate":  "Generated from https://github.com/Azure/Azure-Sentinel/tree/master/Tools/Playbook-ARM-Template-Generator by Antonio Formato"
         },
         "author":  {
             "name":  ""
@@ -108,7 +108,7 @@
                                             "api-key":  "@{variables('api-key')}"
                                         },
                                         "method":  "POST",
-                                        "uri":  "https://openaitest123.openai.azure.com/openai/deployments/test1/completions?api-version=2022-12-01"
+                                        "uri":  "@variables('AzureOpenAI_URI')"
                                     }
                                 },
                                 "Parse_JSON_-_Add_Commenti_on_TTPs":  {
@@ -235,7 +235,7 @@
                                             "api-key":  "@variables('api-key')"
                                         },
                                         "method":  "POST",
-                                        "uri":  "https://openaitest123.openai.azure.com/openai/deployments/test1/completions?api-version=2022-12-01"
+                                        "uri":  "@variables('AzureOpenAI_URI')"
                                     }
                                 },
                                 "Parse_JSON_-_Add_KQL_suggestion":  {
@@ -343,6 +343,20 @@
                             },
                             "type":  "Foreach"
                         },
+                        "AzureOpenAI_URI":  {
+                            "runAfter":  {
+                            },
+                            "type":  "InitializeVariable",
+                            "inputs":  {
+                                "variables":  [
+                                    {
+                                        "name":  "AzureOpenAI_URI",
+                                        "type":  "string",
+                                        "value":  "https://openaitest123.openai.azure.com/openai/deployments/test1/completions?api-version=2022-12-01"
+                                    }
+                                ]
+                            }
+                        },
                         "Incident_response_question":  {
                             "runAfter":  {
                                 "api-key":  [
@@ -377,7 +391,7 @@
                                     "api-key":  "@{variables('api-key')}"
                                 },
                                 "method":  "POST",
-                                "uri":  "https://openaitest123.openai.azure.com/openai/deployments/test1/completions?api-version=2022-12-01"
+                                "uri":  "@variables('AzureOpenAI_URI')"
                             }
                         },
                         "Parse_JSON_-_ask_for_tasks":  {
@@ -449,6 +463,9 @@
                         },
                         "api-key":  {
                             "runAfter":  {
+                                "AzureOpenAI_URI":  [
+                                    "Succeeded"
+                                ]
                             },
                             "type":  "InitializeVariable",
                             "inputs":  {
@@ -496,9 +513,14 @@
                                 }
                             },
                             "azuresentinel_1":  {
-                                "connectionId":  "/subscriptions/1fc83b9d-a5e5-416b-be7a-b4a6b4c30dd3/resourceGroups/sentinel-we/providers/Microsoft.Web/connections/azuresentinel",
-                                "connectionName":  "azuresentinel",
-                                "id":  "/subscriptions/1fc83b9d-a5e5-416b-be7a-b4a6b4c30dd3/providers/Microsoft.Web/locations/westeurope/managedApis/azuresentinel"
+                                "connectionId":  "[resourceId('Microsoft.Web/connections', variables('MicrosoftSentinelConnectionName'))]",
+                                "connectionName":  "[variables('MicrosoftSentinelConnectionName')]",
+                                "id":  "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Web/locations/', resourceGroup().location, '/managedApis/Azuresentinel')]",
+                                "connectionProperties":  {
+                                    "authentication":  {
+                                        "type":  "ManagedServiceIdentity"
+                                    }
+                                }
                             }
                         }
                     }
